@@ -7,11 +7,14 @@ using System.Runtime.InteropServices;
 
 public static class NixStore {
     public static async Task<NixSystem?> GetCurrentSystem(CancellationToken cancel = default) {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+         || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             return null;
 
-        var systemDir = new DirectoryInfo("/run/current-system");
-        return systemDir.Exists ? new(systemDir) : null;
+        return await Task.Run(() => {
+            var systemDir = new DirectoryInfo("/run/current-system");
+            return systemDir.Exists ? new NixSystem(systemDir) : null;
+        }, cancel).ConfigureAwait(false);
     }
 
     public static async IAsyncEnumerable<NixStoreEntry> GetAllDependencies(
